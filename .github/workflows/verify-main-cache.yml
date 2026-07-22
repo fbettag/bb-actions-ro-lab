@@ -1,0 +1,31 @@
+name: verify-main-cache
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/cache/restore@v4
+        id: r
+        with:
+          path: cache-seed
+          key: ro-residual-shared-key-v2
+      - name: Show payload
+        run: |
+          echo "cache-hit=${{ steps.r.outputs.cache-hit }}"
+          echo "ref=${{ github.ref }}"
+          echo "event=${{ github.event_name }}"
+          ls -la cache-seed 2>/dev/null || true
+          echo "PAYLOAD_BEGIN"
+          cat cache-seed/payload.txt 2>/dev/null || echo MISSING
+          echo "PAYLOAD_END"
+          if grep -q POISON cache-seed/payload.txt 2>/dev/null; then
+            echo "FINDING=POISON_VISIBLE_ON_MAIN"
+          elif grep -q CLEAN_MAIN cache-seed/payload.txt 2>/dev/null; then
+            echo "FINDING=CLEAN_OK"
+          else
+            echo "FINDING=OTHER"
+          fi
