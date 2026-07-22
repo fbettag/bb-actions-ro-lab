@@ -1,0 +1,26 @@
+name: seed-default-cache
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  actions: write
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Seed default-branch cache (should be RW on push to default)
+        uses: actions/cache@v4
+        with:
+          path: cache-seed
+          key: ro-residual-shared-key-v1
+      - run: |
+          mkdir -p cache-seed
+          echo "DEFAULT_BRANCH_PAYLOAD_$(date -u +%s)" > cache-seed/payload.txt
+          cat cache-seed/payload.txt
+      - uses: actions/cache/save@v4
+        with:
+          path: cache-seed
+          key: ro-residual-shared-key-v1

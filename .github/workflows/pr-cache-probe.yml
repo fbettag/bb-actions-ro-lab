@@ -1,0 +1,41 @@
+name: pr-cache-probe
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Try restore shared key from PR context
+        id: restore
+        uses: actions/cache/restore@v4
+        with:
+          path: cache-seed
+          key: ro-residual-shared-key-v1
+          restore-keys: ro-residual-shared-
+      - name: Report restore
+        run: |
+          echo "cache-hit=${{ steps.restore.outputs.cache-hit }}"
+          ls -la cache-seed 2>/dev/null || echo "no cache-seed dir"
+          cat cache-seed/payload.txt 2>/dev/null || echo "no payload"
+      - name: Attempt save same key from PR (should fail RO after 2026-06)
+        id: save
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: cache-seed
+          key: ro-residual-shared-key-v1
+      - name: Poison attempt different key claiming default scope
+        continue-on-error: true
+        run: |
+          mkdir -p poison
+          echo "POISON_FROM_PR_${{ github.event_name }}_${{ github.ref }}" > poison/p.txt
+      - uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: poison
+          key: ro-residual-shared-key-v1-poison
